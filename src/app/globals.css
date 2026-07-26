@@ -1808,7 +1808,7 @@ html[data-theme=dark] body.material-3 .hub-arrow{background:#394451!important;co
 .sys-select-label{display:flex!important;align-items:center!important;line-height:normal!important;min-height:0!important}
 .sys-select-arrow{position:static!important;inset:auto!important;margin:0!important;align-self:center!important;justify-self:end!important;flex:0 0 26px!important;width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important;transform:none!important;line-height:0!important}
 /* 5. Dropdown menus are fixed overlays and temporarily escape card clipping. */
-.sys-custom-select.open .sys-select-list{position:fixed!important;z-index:30000!important;box-shadow:0 18px 42px rgba(24,32,42,.18)!important}
+.sys-custom-select.open .sys-select-list{position:absolute!important;z-index:30000!important;box-shadow:0 18px 42px rgba(24,32,42,.18)!important}
 .material-3 :is(.card,.pcard,.hub-card,.qlcard,.cucard,.kcard,.paycard):has(.sys-custom-select.open){overflow:visible!important;z-index:1000!important}
 /* 3. Larger crisp VinFast V: black light mode, white dark mode. */
 .brand{gap:12px!important}.brand .vinfast-v-logo{width:48px!important;height:42px!important;object-fit:contain!important;filter:brightness(0)!important;image-rendering:auto!important}.brand span{font-size:23px!important;font-weight:800!important;letter-spacing:-.01em!important}
