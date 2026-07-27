@@ -97,6 +97,9 @@ export function AuditPlanView({
   const [itemFormPlanId, setItemFormPlanId] = useState("")
   const [itemFormPhaseId, setItemFormPhaseId] = useState("")
   const [pendingItemPhaseId, setPendingItemPhaseId] = useState<string | null>(null)
+  const [planFormError, setPlanFormError] = useState<string | null>(null)
+  const [phaseFormError, setPhaseFormError] = useState<string | null>(null)
+  const [itemFormError, setItemFormError] = useState<string | null>(null)
   const [itemFormStatus, setItemFormStatus] = useState("planned")
 
   const visiblePlanId = openPlanId
@@ -222,7 +225,14 @@ export function AuditPlanView({
 
   function submitPlan(formData: FormData) {
     const input = { title: String(formData.get("title") || ""), scheduledAt: String(formData.get("scheduledAt") || "") || null, status: String(formData.get("status") || "planned") }
-    startTransition(async () => { await saveAuditPlan(input); setShowPlanForm(false) })
+    setPlanFormError(null)
+    startTransition(async () => {
+      try {
+        await saveAuditPlan(input); setShowPlanForm(false)
+      } catch (e) {
+        setPlanFormError(e instanceof Error ? e.message : String(e))
+      }
+    })
   }
   function submitPhase(formData: FormData) {
     const input = { id: editingPhase?.id, auditPlanId: String(formData.get("auditPlanId") || ""), name: String(formData.get("name") || ""), order: formData.get("order") ? Number(formData.get("order")) : null }
@@ -501,6 +511,7 @@ export function AuditPlanView({
 
       <FormModal open={showPlanForm} title="Thêm kế hoạch kiểm toán" onClose={() => setShowPlanForm(false)} onSubmit={() => { const f = document.getElementById("tf-auditplan-form") as HTMLFormElement | null; if (f) submitPlan(new FormData(f)) }} submitting={pending}>
         <form id="tf-auditplan-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {planFormError && <div style={{ background: "#fce4ec", color: "#c62828", padding: "8px 12px", borderRadius: 6, fontSize: 13, fontWeight: 500 }}>{planFormError}</div>}
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên kế hoạch *
             <input name="title" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>

@@ -19,21 +19,26 @@ async function requirePermission(action: "create" | "edit" | "delete") {
 export type SaveAuditPlanInput = { id?: string; title: string; scheduledAt?: string | null; status?: string | null }
 
 export async function saveAuditPlan(input: SaveAuditPlanInput) {
-  const userId = await requirePermission(input.id ? "edit" : "create")
-  const data: Record<string, unknown> = { title: input.title, scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, status: input.status || "planned" }
-  if (input.id) {
-    const existing = await db.auditPlan.findUnique({ where: { id: input.id } })
-    const ctx = await getUserRbacContext(userId)
-    assertScopedAccess(ctx, "auditplan", existing)
-    await db.auditPlan.update({ where: { id: input.id }, data })
-  } else {
-    const ctx = await getUserRbacContext(userId)
-    data.centerId = ctx.centerId ?? null
-    data.groupId = ctx.groupId ?? null
-    const created = await db.auditPlan.create({ data: data as Parameters<typeof db.auditPlan.create>[0]["data"] })
-    await logAudit("auditplan", "create", created.title, `Thêm kế hoạch kiểm toán “${created.title}”`)
+  try {
+    const userId = await requirePermission(input.id ? "edit" : "create")
+    const data: Record<string, unknown> = { title: input.title, scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, status: input.status || "planned" }
+    if (input.id) {
+      const existing = await db.auditPlan.findUnique({ where: { id: input.id } })
+      const ctx = await getUserRbacContext(userId)
+      assertScopedAccess(ctx, "auditplan", existing)
+      await db.auditPlan.update({ where: { id: input.id }, data })
+    } else {
+      const ctx = await getUserRbacContext(userId)
+      data.centerId = ctx.centerId ?? null
+      data.groupId = ctx.groupId ?? null
+      const created = await db.auditPlan.create({ data: data as Parameters<typeof db.auditPlan.create>[0]["data"] })
+      await logAudit("auditplan", "create", created.title, `Thêm kế hoạch kiểm toán “${created.title}”`)
+    }
+    revalidatePath("/auditplan")
+  } catch (err) {
+    console.error("saveAuditPlan error:", err)
+    throw new Error(`saveAuditPlan failed: ${err instanceof Error ? err.message : String(err)}`)
   }
-  revalidatePath("/auditplan")
 }
 
 export async function deleteAuditPlan(id: string) {
