@@ -57,6 +57,7 @@ export function AuditPlanView({
   const [editingItem, setEditingItem] = useState<AuditItemRow | null>(null)
   const [editingPhase, setEditingPhase] = useState<AuditPhaseRow | null>(null)
   const [confirmDeletePlanId, setConfirmDeletePlanId] = useState<string | null>(null)
+  const [editingPlan, setEditingPlan] = useState<AuditPlanRow | null>(null)
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null)
   const [confirmDeletePhaseId, setConfirmDeletePhaseId] = useState<string | null>(null)
   const [itemSelected, setItemSelected] = useState<Set<string>>(new Set())
@@ -224,13 +225,14 @@ export function AuditPlanView({
   )
 
   function submitPlan(formData: FormData) {
-    const input = { title: String(formData.get("title") || ""), scheduledAt: String(formData.get("scheduledAt") || "") || null, status: String(formData.get("status") || "planned") }
+    const input = { id: editingPlan?.id, title: String(formData.get("title") || ""), scheduledAt: String(formData.get("scheduledAt") || "") || null, status: String(formData.get("status") || "planned") }
     setPlanFormError(null)
     startTransition(async () => {
-      try {
-        await saveAuditPlan(input); setShowPlanForm(false)
-      } catch (e) {
-        setPlanFormError(e instanceof Error ? e.message : String(e))
+      const result = await saveAuditPlan(input)
+      if (result.error) {
+        setPlanFormError(result.error)
+      } else {
+        setShowPlanForm(false); setEditingPlan(null)
       }
     })
   }
@@ -378,6 +380,7 @@ export function AuditPlanView({
                 <Perm minPerm="dept_head">
                   <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
                     <button type="button" className="btn-line" style={{ flex: 1 }} onClick={() => setOpenPlanId(p.id)}>Xem chi tiết</button>
+                    <button type="button" className="btn-line" onClick={() => { setEditingPlan(p); setShowPlanForm(true) }}>Sửa</button>
                     <button type="button" className="btn-line" onClick={() => setConfirmDeletePlanId(p.id)}>Xoá</button>
                   </div>
                 </Perm>
@@ -393,6 +396,9 @@ export function AuditPlanView({
         <>
           <div className="ch" style={{ margin: "0 0 16px" }}>
             <div><h3 style={{ margin: 0 }}>{currentPlan.title}</h3><span>{currentPlan.scheduledAt ? new Date(currentPlan.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</span></div>
+            <Perm minPerm="dept_head">
+              <button type="button" className="btn-line" style={{ fontSize: 12 }} onClick={() => { setEditingPlan(currentPlan); setShowPlanForm(true) }}>Sửa tên</button>
+            </Perm>
           </div>
           <div className="kpis-tier" style={{ marginBottom: 20 }}>
             <KpiCard label="Tổng hạng mục" value={kpi.total} tone="blue" trend={kpiTrends.total} />
@@ -509,14 +515,14 @@ export function AuditPlanView({
       </>
       )}
 
-      <FormModal open={showPlanForm} title="Thêm kế hoạch kiểm toán" onClose={() => setShowPlanForm(false)} onSubmit={() => { const f = document.getElementById("tf-auditplan-form") as HTMLFormElement | null; if (f) submitPlan(new FormData(f)) }} submitting={pending}>
-        <form id="tf-auditplan-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <FormModal open={showPlanForm} title={editingPlan ? "Sửa kế hoạch" : "Thêm kế hoạch kiểm toán"} onClose={() => { setShowPlanForm(false); setEditingPlan(null); setPlanFormError(null) }} onSubmit={() => { const f = document.getElementById("tf-auditplan-form") as HTMLFormElement | null; if (f) submitPlan(new FormData(f)) }} submitting={pending}>
+        <form key={editingPlan?.id ?? "new"} id="tf-auditplan-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {planFormError && <div style={{ background: "#fce4ec", color: "#c62828", padding: "8px 12px", borderRadius: 6, fontSize: 13, fontWeight: 500 }}>{planFormError}</div>}
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên kế hoạch *
-            <input name="title" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            <input name="title" required defaultValue={editingPlan?.title ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Ngày dự kiến
-            <input type="date" name="scheduledAt" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            <input type="date" name="scheduledAt" defaultValue={editingPlan?.scheduledAt ? editingPlan.scheduledAt.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <input type="hidden" name="status" value={planFormStatus} />
           <div className="field">

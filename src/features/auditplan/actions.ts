@@ -18,7 +18,7 @@ async function requirePermission(action: "create" | "edit" | "delete") {
 
 export type SaveAuditPlanInput = { id?: string; title: string; scheduledAt?: string | null; status?: string | null }
 
-export async function saveAuditPlan(input: SaveAuditPlanInput) {
+export async function saveAuditPlan(input: SaveAuditPlanInput): Promise<{ error?: string }> {
   try {
     const userId = await requirePermission(input.id ? "edit" : "create")
     const data: Record<string, unknown> = { title: input.title, scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, status: input.status || "planned" }
@@ -27,6 +27,7 @@ export async function saveAuditPlan(input: SaveAuditPlanInput) {
       const ctx = await getUserRbacContext(userId)
       assertScopedAccess(ctx, "auditplan", existing)
       await db.auditPlan.update({ where: { id: input.id }, data })
+      await logAudit("auditplan", "update", input.title, `Cập nhật kế hoạch “${input.title}”`)
     } else {
       const ctx = await getUserRbacContext(userId)
       data.centerId = ctx.centerId ?? null
@@ -35,9 +36,10 @@ export async function saveAuditPlan(input: SaveAuditPlanInput) {
       await logAudit("auditplan", "create", created.title, `Thêm kế hoạch kiểm toán “${created.title}”`)
     }
     revalidatePath("/auditplan")
+    return {}
   } catch (err) {
     console.error("saveAuditPlan error:", err)
-    throw new Error(`saveAuditPlan failed: ${err instanceof Error ? err.message : String(err)}`)
+    return { error: err instanceof Error ? err.message : String(err) }
   }
 }
 
