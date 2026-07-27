@@ -48,8 +48,8 @@ function downloadCsv(filename: string, rows: Array<Array<string | number | null>
 }
 
 export function AuditPlanView({
-  plans, phases, items,
-}: { plans: AuditPlanRow[]; phases: AuditPhaseRow[]; items: AuditItemRow[] }) {
+  plans, phases, items, memberOptions,
+}: { plans: AuditPlanRow[]; phases: AuditPhaseRow[]; items: AuditItemRow[]; memberOptions: Array<{ value: string; label: string }> }) {
   const [pending, startTransition] = useTransition()
   const [showPlanForm, setShowPlanForm] = useState(false)
   const [showPhaseForm, setShowPhaseForm] = useState(false)
@@ -102,6 +102,7 @@ export function AuditPlanView({
   const [phaseFormError, setPhaseFormError] = useState<string | null>(null)
   const [itemFormError, setItemFormError] = useState<string | null>(null)
   const [itemFormStatus, setItemFormStatus] = useState("planned")
+  const [itemFormAssignee, setItemFormAssignee] = useState("")
 
   const visiblePlanId = openPlanId
   const currentPlan = plans.find((p) => p.id === openPlanId) ?? null
@@ -113,6 +114,7 @@ export function AuditPlanView({
       setItemFormPlanId(editingItem?.auditPlanId ?? visiblePlanId)
       setItemFormPhaseId(editingItem?.phaseId ?? pendingItemPhaseId ?? "")
       setItemFormStatus(editingItem?.status ?? "planned")
+      setItemFormAssignee(editingItem?.assignee ?? "")
     }
   }, [showItemForm, editingItem, visiblePlanId, pendingItemPhaseId])
   const scopedItems = useMemo(
@@ -552,9 +554,11 @@ export function AuditPlanView({
             <input name="name" required defaultValue={editingItem?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phụ trách
-              <input name="assignee" defaultValue={editingItem?.assignee ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Phụ trách</label>
+              <input type="hidden" name="assignee" value={itemFormAssignee} />
+              <CustomSelect value={itemFormAssignee} onChange={setItemFormAssignee} width="100%" options={[{ value: "", label: "Chưa gán" }, ...memberOptions]} triggerStyle={itemFormAssignee ? undefined : { color: "#8a8f98" }} />
+            </div>
             <div className="field" style={{ flex: 1 }}>
               <label>Trạng thái</label>
               <input type="hidden" name="status" value={itemFormStatus} />
